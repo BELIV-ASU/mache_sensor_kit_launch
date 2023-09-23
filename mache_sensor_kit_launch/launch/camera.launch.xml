@@ -1,0 +1,42 @@
+<launch>
+  <arg name="launch_driver" default="true"/>
+  <arg name="playback" default="false"/>
+    
+  <group>
+    <push-ros-namespace namespace="camera"/>
+    
+    <group>
+      <push-ros-namespace namespace="camera0"/>
+	    <!-- Camera -->
+	    <node unless="$(var playback)" name="gst_rgb" pkg="ds_video_gst" exec="ds_video_gst_node" output="screen">
+		<param name="pipeline" value='aravissrc camera-name="Lucid Vision Labs-TRI032S-C-233301293" do-timestamp=true
+		! video/x-bayer,format=rggb,width=2048,height=1536,framerate=30/1
+		! bayer2rgb
+		! cameraundistort
+		! videoconvert ! video/x-raw,format=RGB
+		! queue max-size-buffers=3 leaky=downstream
+		! appsink' />
+		<param name="camera_info_pkg" value="asu" />
+		<param name="camera_info_yaml" value="camera_intrinsics/camera_info.yaml" />
+		<param name="frame_id" value="camera" />
+		<param name="image_topic" value="image_rect" />
+		<param name="video_topic" value="encoded" />
+		<param name="target_fd" value="33.333" />
+	    </node>
+    </group>
+  </group>
+  <!-- (usb_cam_node is assumed to have launched on logging PC) -->
+  <node pkg="topic_tools" exec="relay" name="tl_camera_info_relay" output="log">
+    <param name="input_topic" value="camera_info"/>
+    <param name="output_topic" value="camera_info"/>
+    <param name="type" value="sensor_msgs/msg/CameraInfo"/>
+    <param name="reliability" value="best_effort"/>
+  </node>
+
+  <node pkg="topic_tools" exec="relay" name="tl_compressed_image_relay" output="log">
+    <param name="input_topic" value="image_rect"/>
+    <param name="output_topic" value="image_rect_color"/>
+    <param name="type" value="sensor_msgs/msg/Image"/>
+    <param name="reliability" value="best_effort"/>
+   </node>
+</launch>

@@ -1,0 +1,13 @@
+<launch>
+  <arg name="playback" default="false"/>
+  <!-- Continental RADAR -->
+  <group>
+    <push-ros-namespace namespace="radar" />
+      <node unless="$(var playback)" pkg="conti_radar_can" exec="conti_radar_can_node" name="conti_radar_can" output="screen">
+        <param name="radar_name" value="radar" />
+        <param name="send_speed" value="true" />
+        <remap from="twist" to="/vehicle/twist" />
+      </node>
+  </group>
+
+</launch>

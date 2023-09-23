@@ -1,0 +1,52 @@
+<launch>
+  <arg name="launch_driver" default="true"/>
+  <arg name="playback" default="false"/>
+  <arg name="gnss_receiver" default="oxts" description="oxts(default)"/>
+  <arg name="coordinate_system" default="1" description="0:UTM, 1:MGRS, 2:PLANE"/>
+
+  <group>
+    <push-ros-namespace namespace="gnss"/>
+
+    <!-- OxTS GPS -->
+    <include file="$(find-pkg-share asu)/launch/oxts_driver.launch.py">
+        <arg name="playback" value="$(var playback)" />
+        <arg name="unit_ip" value="192.168.0.3" />
+        <arg name="topic_prefix" value="oxts" />
+        <arg name="param_file" value="$(find-pkg-share asu)/config/oxts_params.yaml" />
+    </include>
+
+    <!-- NavSatFix to MGRS Pose -->
+    <include file="$(find-pkg-share gnss_poser)/launch/gnss_poser.launch.xml">
+      <arg name="input_topic_fix" value="oxts/fix"/>
+      
+      <arg name="input_topic_orientation" value="/autoware_orientation"/>
+
+      <arg name="output_topic_gnss_pose" value="pose"/>
+      <arg name="output_topic_gnss_pose_cov" value="pose_with_covariance"/>
+      <arg name="output_topic_gnss_fixed" value="fixed"/>
+
+      <arg name="coordinate_system" value="$(var coordinate_system)"/>
+      <arg name="use_gnss_ins_orientation" value="true"/>
+
+      <arg name="gnss_frame" value="gnss_link"/>
+      <arg name="gnss_base_frame" value="gnss_base_link"/>
+    </include>
+    
+    <!-- Oxts velocity to Autoware velocity -->
+    <include file="$(find-pkg-share oxts_datatype_conversion)/launch/oxts_datatype_conversion.launch.xml">
+      <arg name="input_topic_vel" value="oxts/velocity"/>
+      <arg name="output_topic_vel" value="oxts/autoware_velocity"/>
+    </include>
+    
+ </group>
+ <group>
+    <!--push-ros-namespace namespace="imu"/-->
+
+    <include file="$(find-pkg-share imu_corrector)/launch/imu_corrector.launch.xml">
+      <arg name="input_topic" value="gnss/oxts/imu"/>
+      <arg name="output_topic" value="imu/imu_data"/>
+      <arg name="param_file" value="$(find-pkg-share individual_params)/config/$(env VEHICLE_ID default)/mache_sensor_kit/imu_corrector.param.yaml"/>
+    </include>
+ </group>
+ 
+</launch>
